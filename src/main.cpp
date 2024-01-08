@@ -1,39 +1,53 @@
-#include <WiFi.h>
+#include <TCPServer.h>
+#include <SnakeSystem.h>
 #include <client.h>
+#include <Adafruit_NeoPixel.h>
+
+#define WIDTH 16
+#define LIGHTS 25
+#define NUMPIXELS 256
+
+TaskHandle_t Loop2;
 
 const char* ssid = "4E6YPHET";
 const char* password = "tea4tre3ter131min172";
-WiFiServer server(80);
+const int serial = 115200;
 
-void setup() {
-  Serial.begin(115200);
-  Serial.print("Connecting to WiFi");
-  WiFi.begin(ssid, password);
-  uint8_t tries = 5;
-  while (WiFi.status() != WL_CONNECTED && tries-- > 0) {
-    Serial.print('.');
-    delay(1000);
-  }
-  Serial.println();
-  if (tries == -1) {
-    Serial.println("Failed to connect!");
-    return;
-  }
-  Serial.printf("IP address: "); Serial.println(WiFi.localIP());
-  Serial.printf("Hostname: %s\n", WiFi.getHostname());
-  server.begin();
+uint8_t command = 0; 
+
+void onRead(TCPClient<int>* c) {
+  auto client = c->wifiClient;
+  command = parceInt(client.read(), client.read(), client.read(), client.read());
+  Serial.printf("Command: %d\n", command); 
+}
+void onConnect(TCPClient<int>* c){
+  Serial.println("Client connected!");
+}
+void onDisconnect(TCPClient<int>* c){
+  Serial.println("Client disconnected!");
 }
 
-void loop() {
-  WiFiClient client = server.available();
-  if (!client) return;
-  Serial.println("Client connected!");
-    do {
-      yield();
-      if (client.available() < 4) continue;
-      int command = parceInt(client.read(), client.read(), client.read(), client.read());
-      Serial.printf("Command: %d\n", command);
-    } while (client);
-    client.stop();
-    Serial.println("Client disconnected!");
+SnakeSystem snakeSystem;
+TCPServer<int> wifiSystem(&onRead, &onConnect, &onDisconnect);
+Adafruit_NeoPixel pixels(NUMPIXELS, LIGHTS, NEO_RGB + NEO_KHZ800);
+
+void loop() { wifiSystem.update(); }
+void loop2( void * pvParameters ){
+  while(true){
+    yield();
+    pixels.clear();
+    snakeSystem.loop(command);
+    Vector2 snakePosition = snakeSystem.getPosition();
+    pixels.setPixelColor(getLamp(snakePosition.x, snakePosition.y, WIDTH), pixels.Color(0, 0, 255));
+    pixels.show();
+    delay(300);
+  }
+}
+
+void setup() {
+  connect(ssid, password, serial);
+  wifiSystem.wifiServer.begin(80);
+  pixels.setBrightness(20);
+  pixels.begin();
+  xTaskCreatePinnedToCore(loop2, "loop2", 10000, NULL, 1, &Loop2, 1);
 }

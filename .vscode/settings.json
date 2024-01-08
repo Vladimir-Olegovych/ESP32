@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "random": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "istream": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp",
+        "typeinfo": "cpp"
     }
 }
