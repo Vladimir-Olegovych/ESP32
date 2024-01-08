@@ -9,8 +9,8 @@
 
 TaskHandle_t Loop2;
 
-const char* ssid = "4E6YPHET";
-const char* password = "tea4tre3ter131min172";
+const char* ssid = "";
+const char* password = "";
 const int serial = 115200;
 
 uint8_t command = 0; 
